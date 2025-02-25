@@ -49,4 +49,27 @@ Lỗi ở đây sẽ xảy ra khi máy chủ ngầm định xác nhận trong c�
 
 Tuy nhiên, với lỗi này website có thể phòng ngừa bằng cách chỉ chạy tập lệnh có loại `MIME type` được cấu hình rõ ràng để thực thi. Nếu không chúng chỉ báo lỗi hoặc trả về nội dung của tệp dưới dạng văn bản thuần tuý. Nhưng loại cấu hình này thường khác nhau giữa các thư mục. Một thư mục cho phép người dùng tải lên sẽ có nhiều biện pháp hơn các vị trí khác. Bạn có thể thử upload file script lên một vị trí mà hệ trống không cho phép upload file người dùng. Có thể hệ thống sẽ thực thi file script đó
 - Lab2:<https://portswigger.net/web-security/learning-paths/file-upload-vulnerabilities/preventing-file-execution-in-user-accessible-directories/file-upload/lab-file-upload-web-shell-upload-via-path-traversal>
-#
+
+# Overriding the server configuration
+Ví dụ, một Apache server sẽ thực thi một file php theo dạng: 
+```
+LoadModule php_module /usr/lib/apache2/modules/libphp.so
+    AddType application/x-httpd-php .php
+```
+Mỗi server thường có `web.congif` chứa danh sách các tệp cho phép và không cho phép. Nếu bạn có thể upload file script chứa web shell thay đổi danh sách các tệp không cho phép hoặc cho phép, ta có thể đánh lừa máy chủ, đổi extension của file sang dạng `MIME type` có thể thực thi.
+- Lab: <https://portswigger.net/web-security/learning-paths/file-upload-vulnerabilities/insufficient-blacklisting-of-dangerous-file-types/file-upload/lab-file-upload-web-shell-upload-via-extension-blacklist-bypass>
+# Obfuscating file extensions
+Vì `MIME type` không thể nhận diện ký tự hoa thường nên ta có thể làm nhiều file extension để bypass qua nó.
+- Tạo nhiều file extension. VD: `exploit.php.jpg`
+- Thêm các ký tự vào cuối. VD: `exploit.php.`
+- Mã hoá URl hoặc thêm byte null. VD: `expoilt%2Ephp` hay `exploit.php;.jpg` hoặc `exploit.php%00.jpg`
+- Sử dụng các chuỗi như xC0 x2E, xC4 xAE hoặc Xc) xAE để dịch thành x2E nếu tên tệp dịch dưới dạng UTF-8 rồi sau đó chuyển thành mã ASCII được sử dụng trong file path.
+- Đánh lừa hệ thống tự động xoá. VD; Với `exploit.p.phphp` hệ thống sẽ xoá phần `.php` ở giữa và file sẽ thành `exploit.php`.
+- etc..
+
+- Lab: <https://portswigger.net/web-security/learning-paths/file-upload-vulnerabilities/insufficient-blacklisting-of-dangerous-file-types/file-upload/lab-file-upload-web-shell-upload-via-obfuscated-file-extension>
+
+# Flawed validation file contents
+- Thay vì tin tưởng `Content-Type` header, các máy chủ sẽ kiểm tra lại file có được cho phép hay không. Trong trường hợp upload function, server sẽ thử kiểm tra các thuộc tính của ảnh như kích thước. Khi bạn upload file script lên, ví dụ như php, nó sẽ coi là không có kích thước và bị từ chối. Ta có thể bypass bằng cách bắt đầu file bằng signature byte của file ảnh. Ví dụ: JPEG sẽ bắt đầu bằng `FF D8 FF`.
+- Có một cách nữa là xử dụng các công cụ đặc biệt như ExifTool, nó có thể tạo ra các file ảnh chứa script.
+- Lab: <https://portswigger.net/web-security/learning-paths/file-upload-vulnerabilities/flawed-validation-of-the-file-s-contents/file-upload/lab-file-upload-remote-code-execution-via-polyglot-web-shell-upload>
